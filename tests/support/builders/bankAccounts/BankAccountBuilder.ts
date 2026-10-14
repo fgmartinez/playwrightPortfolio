@@ -1,7 +1,7 @@
-// tests/support/builders/BankAccountBuilder.ts
 import { randomInt } from "node:crypto";
-import type { BankAccountInput } from "../models/BankAccountInput";
+import type { BankAccountInput } from "../../models/bankAccounts/BankAccountInput";
 
+/** Immutable bank account inputs with UI-valid defaults; no HTTP side effects. */
 export class BankAccountBuilder {
   private constructor(private readonly account: BankAccountInput) {}
 

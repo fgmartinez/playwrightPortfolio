@@ -1,5 +1,5 @@
 import { test, expect } from "../support/fixtures";
-import { RegistrationUserBuilder } from "../support/builders/RegistrationUserBuilder";
+import { RegistrationUserBuilder } from "../support/builders/users/RegistrationUserBuilder";
 
 test("a new user can register, sign in and access their API session", async ({
   page,

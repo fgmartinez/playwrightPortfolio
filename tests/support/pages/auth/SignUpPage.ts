@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
-import type { RegistrationUser } from "../models/RegistrationUser";
+import type { RegistrationUser } from "../../models/users/RegistrationUser";
 
+/** Sign-up screen interactions; the test chooses its expected outcome. */
 export class SignUpPage {
   constructor(private readonly page: Page) {}
 

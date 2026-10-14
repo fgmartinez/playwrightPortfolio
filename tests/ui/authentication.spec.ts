@@ -1,6 +1,6 @@
 import { test, expect } from "../support/fixtures";
-import { ApiUserBuilder } from "../support/builders/ApiUserBuilder";
-import { LoginCredentialsBuilder } from "../support/builders/LoginCredentialsBuilder";
+import { ApiUserBuilder } from "../support/builders/users/ApiUserBuilder";
+import { LoginCredentialsBuilder } from "../support/builders/auth/LoginCredentialsBuilder";
 
 test("UI login establishes an authenticated API session", async ({
   page,

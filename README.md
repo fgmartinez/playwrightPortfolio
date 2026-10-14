@@ -43,13 +43,13 @@ In a second terminal, install and run the test suite:
 
 ```bash
 cd playwrightPortfolio
-npm install
+npm ci
 npx playwright install chromium
-npm run typecheck
+npm run check
 npm test
 ```
 
-The UI defaults to http://localhost:3000 and the backend to http://localhost:3001. Both origins are defined in `app.config.ts` and can be overridden with `UI_BASE_URL` and `API_BASE_URL`. Browser pages navigate with paths such as `/signin`; API clients own endpoint paths such as `/users`. Specs call the page objects and API clients without specifying a host. Commit the generated `package-lock.json` after installation; use `npm ci` on subsequent installs.
+The UI defaults to http://localhost:3000 and the backend to http://localhost:3001. Both origins are defined in `app.config.ts` and can be overridden with `UI_BASE_URL` and `API_BASE_URL`. Browser pages navigate with paths such as `/signin`; API clients own endpoint paths such as `/users`. Specs call the page objects and API clients without specifying a host. The committed lockfile makes `npm ci` reproducible.
 
 ## Structure and responsibilities
 
@@ -57,15 +57,16 @@ The UI defaults to http://localhost:3000 and the backend to http://localhost:300
 | --- | --- |
 | `app.config.ts` | Centralized UI and API origins with environment overrides. |
 | `playwright.config.ts` | Runner configuration, browser, UI base URL and failure artifacts. |
-| `tests/support/models/` | Typed requests, user projection and generic `ApiResult<T>`. |
-| `tests/support/builders/` | Immutable credentials and unique UI/API user payloads. |
-| `tests/support/pages/` | Page objects: UI actions and locators for one screen. |
-| `tests/support/api/` | HTTP clients: endpoints and transport; they do not decide test outcomes. |
+| `tests/support/models/{auth,users,bankAccounts,shared}/` | Request and response types grouped by domain. |
+| `tests/support/builders/{auth,users,bankAccounts}/` | Immutable data generation and variants. |
+| `tests/support/pages/auth/` | Page objects: UI actions and locators for one screen. |
+| `tests/support/api/{auth,users,shared}/` | HTTP clients and response decoders; they do not decide test outcomes. |
 | `tests/support/fixtures.ts` | Constructs test-scoped objects and injects their dependencies. |
 | `tests/ui/` | User journeys and assertions across UI and API. |
 | `tests/api/` | Direct API behavior and authorization checks. |
+| `eslint.config.mjs` | Type-aware ESLint checks and consistent type imports. |
 
-The page object receives Playwright's `Page`; the API client receives `APIRequestContext`. Tests assert business outcomes. `ApiUserBuilder` produces a unique minimal POST body (`firstName`, `lastName`, `username`, `password`) and optionally a balance. The lazy `testUser` fixture creates an account through `POST /users` for each test that requests one, exposing `{ input, record }`: `input.password` is the test credential, while `record.id` is the server-generated identity. API responses are decoded from `unknown` into typed projections; the server's password hash is never included in `UserRecord`. The UI registration test creates its own user through `SignUpPage` because registration is the behavior under test. No login test relies on a fixed seeded account. See [ADR 0001](docs/decisions/0001-test-data-isolation.md) for the isolation decision.
+The page object receives Playwright's `Page`; the API client receives `APIRequestContext`. Tests assert business outcomes. `ApiUserBuilder` produces a unique minimal POST body (`firstName`, `lastName`, `username`, `password`) and optionally a balance. The lazy `testUser` fixture creates an account through `POST /users` for each test that requests one, exposing `{ input, record }`: `input.password` is the test credential, while `record.id` is the server-generated identity. API responses are decoded from `unknown` into typed projections of fields the tests use; the server's password hash is never included in `UserRecord`. `decodeUserResponse` lives with the user API because it validates the external response at the HTTP boundary. The UI registration test creates its own user through `SignUpPage` because registration is the behavior under test. No login test relies on a fixed seeded account. See [ADR 0001](docs/decisions/0001-test-data-isolation.md) for the isolation decision.
 
 `authApi` uses `page.request`, which shares the browser context's cookies; `apiAuth` and `usersApi` use the isolated Playwright `request` fixture. Each API client owns its relative endpoint path and returns `ApiResult<T>` with a status and validated body. `UsersApi.create(input): Promise<ApiResult<UserResponse, 201>>` requires 201. `AuthApi.login(credentials, remember?): Promise<ApiResult<UserResponse, 200>>` requires 200 and logs in only its own request context. `AuthApi.checkAuth(): Promise<ApiResult<UserResponse, 200> | ApiResult<ApiError, 401>>` accepts 200 and 401. The API login and checkAuth contracts match the pinned app; no frontend session is created by calling `apiAuth.login`.
 
@@ -79,6 +80,12 @@ expect(session.body).toMatchObject({ user: { id: record.id } });
 ```
 
 The sample includes no hardcoded host. `app.config.ts` provides UI/API origins and page objects and API clients provide paths.
+
+## Quality gate and documentation
+
+`npm run typecheck` checks TypeScript types; `npm run lint` applies ESLint rules with type information. `npm run check` runs both, `npm test` runs that check first, and the GitHub Actions Quality workflow runs it on pushes and pull requests. Run `npx playwright test` directly only when deliberately bypassing the npm pretest gate during debugging.
+
+Public types, builders, API clients, page objects and non-obvious behavior have short JSDoc comments explaining their contract or why they exist. Keep business assertions in specs and explain test intent there; avoid comments that repeat what a method name already says.
 
 ## Next slice
 

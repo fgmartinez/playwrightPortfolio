@@ -5,17 +5,23 @@
   "description": "Independent Playwright UI and API test suite for Cypress Real World App.",
   "scripts": {
     "test": "playwright test",
+    "pretest": "npm run check",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
     "test:report": "playwright show-report",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "check": "npm run typecheck && npm run lint"
   },
   "engines": {
     "node": ">=22 <23"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.0",
     "@types/node": "22.15.30",
-    "typescript": "5.8.3"
+    "eslint": "10.12.0",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.71.1"
   }
 }
