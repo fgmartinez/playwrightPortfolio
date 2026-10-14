@@ -1,12 +1,14 @@
 import { test, expect } from "../support/fixtures";
+import { ApiUserBuilder } from "../support/builders/ApiUserBuilder";
 import { LoginCredentialsBuilder } from "../support/builders/LoginCredentialsBuilder";
 
 test("UI login establishes an authenticated API session", async ({
   page,
   signInPage,
   authApi,
+  testUser,
 }) => {
-  const credentials = LoginCredentialsBuilder.forSeededUser().build();
+  const credentials = LoginCredentialsBuilder.fromUser(testUser).build();
 
   await signInPage.open();
   await signInPage.signIn(credentials);
@@ -16,27 +18,30 @@ test("UI login establishes an authenticated API session", async ({
   const response = await authApi.checkAuth();
   expect(response.status()).toBe(200);
   const body: unknown = await response.json();
-  expect(body).toMatchObject({ user: { username: credentials.username } });
+  expect(body).toMatchObject({ user: { username: testUser.username } });
 });
 
-for (const scenario of [
-  {
-    name: "wrong password",
-    credentials: LoginCredentialsBuilder.forSeededUser()
-      .withPassword("incorrect-password")
-      .build(),
-  },
-  {
-    name: "unknown username",
-    credentials: LoginCredentialsBuilder.forSeededUser()
-      .withUsername("nonexistent-user-portfolio")
-      .build(),
-  },
-]) {
-  test(`UI login rejects ${scenario.name}`, async ({ signInPage }) => {
-    await signInPage.open();
-    await signInPage.signIn(scenario.credentials);
+test("UI login rejects the wrong password for an existing user", async ({
+  signInPage,
+  testUser,
+}) => {
+  const credentials = LoginCredentialsBuilder.fromUser(testUser)
+    .withPassword("incorrect-password")
+    .build();
 
-    await expect(signInPage.errorMessage).toHaveText("Username or password is invalid");
-  });
-}
+  await signInPage.open();
+  await signInPage.signIn(credentials);
+
+  await expect(signInPage.errorMessage).toHaveText("Username or password is invalid");
+});
+
+test("UI login rejects an unknown username", async ({ signInPage }) => {
+  // The generated user is intentionally not created through the API.
+  const unknownUser = ApiUserBuilder.aValidUser().build();
+  const credentials = LoginCredentialsBuilder.fromUser(unknownUser).build();
+
+  await signInPage.open();
+  await signInPage.signIn(credentials);
+
+  await expect(signInPage.errorMessage).toHaveText("Username or password is invalid");
+});
