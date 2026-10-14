@@ -12,8 +12,8 @@ export class SignUpPage {
     await this.page.getByRole("textbox", { name: "First Name" }).fill(user.firstName);
     await this.page.getByRole("textbox", { name: "Last Name" }).fill(user.lastName);
     await this.page.getByRole("textbox", { name: "Username" }).fill(user.username);
-    await this.page.getByTestId("signup-password").fill(user.password);
-    await this.page.getByTestId("signup-confirmPassword").fill(user.password);
+    await this.page.locator("input#password").fill(user.password);
+    await this.page.locator("input#confirmPassword").fill(user.password);
     await this.page.getByRole("button", { name: "Sign Up" }).click();
   }
 }
