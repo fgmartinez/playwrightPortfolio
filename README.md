@@ -4,13 +4,14 @@ Independent Playwright/TypeScript test suite for the [Cypress Real World App](ht
 
 ## Current scope
 
-- Browser authentication flow, verified through the authenticated API session.
+- Browser authentication flow with a unique user created through the API for each test that needs one.
+- The UI session is verified through the authenticated API endpoint.
 - Invalid credentials: wrong password and unknown username.
 - New account registration through UI, followed by login and API session verification.
 - API authorization check from a separate, unauthenticated HTTP context.
 - Chromium, serial execution, failure traces and screenshots.
 
-The application is a local Express/React demo with a shared JSON database. It reseeds on `yarn dev`, so manually registered accounts are temporary. We start with one worker; parallel runs need isolated application and database instances.
+The application is a local Express/React demo with a shared JSON database. It reseeds on `yarn dev`, so manually registered accounts are temporary. There is no per-user DELETE endpoint. We start with one worker; parallel runs need isolated application and database instances.
 
 ## Run locally
 
@@ -56,14 +57,14 @@ The UI defaults to http://localhost:3000 and the backend to http://localhost:300
 | --- | --- |
 | `playwright.config.ts` | Runner configuration, browser, base URL and failure artifacts. |
 | `tests/support/models/` | Types shared by test data and UI actions. |
-| `tests/support/builders/` | Immutable login variants and uniquely named registration users. |
+| `tests/support/builders/` | Immutable credentials and unique UI/API user payloads. |
 | `tests/support/pages/` | Page objects: UI actions and locators for one screen. |
 | `tests/support/api/` | HTTP clients: endpoints and transport; they do not decide test outcomes. |
 | `tests/support/fixtures.ts` | Constructs test-scoped objects and injects their dependencies. |
 | `tests/ui/` | User journeys and assertions across UI and API. |
 | `tests/api/` | Direct API behavior and authorization checks. |
 
-The page object receives Playwright's `Page`; the API client receives `APIRequestContext`. Tests assert outcomes. The login builder starts from a seeded account and creates copies for invalid variants. A generated username is not treated as an existing account. The registration builder generates a unique username for each run; `SignUpPage` enters its fields and a test verifies login and the authenticated API identity. More entity builders follow concrete transfer scenarios.
+The page object receives Playwright's `Page`; the API client receives `APIRequestContext`. Tests assert outcomes. The login builder derives credentials from a user. `ApiUserBuilder` produces complete, unique user payloads; the lazy `testUser` fixture creates an account through `POST /users` for each test that requests one. The UI registration test creates its own user through `SignUpPage` because registration is the behavior under test. No login test relies on a fixed seeded account. See [ADR 0001](docs/decisions/0001-test-data-isolation.md) for the isolation decision.
 
 The UI test injects `page.request`, which shares the browser context's cookies with API calls. The API-only test uses Playwright's isolated `request` fixture, so it intentionally starts unauthenticated. This distinction is part of the test design.
 
