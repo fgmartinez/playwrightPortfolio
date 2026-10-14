@@ -27,4 +27,4 @@ A suite-scoped user is acceptable only for explicitly read-only, immutable refer
 
 ## Verification
 
-For this slice, run `npm run typecheck` and `npm test` while the pinned version of the app is running. We have not yet verified those commands in the user's local environment.
+The suite has been run against app revision `0729f68ac220f7cda4ad09c5693dba11d7c532c6` with one worker. The Quality workflow uses the same revision for its browser and API tests.

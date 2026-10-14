@@ -1,5 +1,6 @@
 import { test as base } from "@playwright/test";
 import { AuthApi } from "./api/auth/AuthApi";
+import { BankAccountsApi } from "./api/bank/BankAccountsApi";
 import { UsersApi } from "./api/users/UsersApi";
 import { ApiUserBuilder } from "./builders/users/ApiUserBuilder";
 import type { ApiUser } from "./models/users/ApiUser";
@@ -13,8 +14,9 @@ export type TestUser = Readonly<{ input: ApiUser; record: UserRecord }>;
 type TestFixtures = {
   signInPage: SignInPage;
   signUpPage: SignUpPage;
-  authApi: AuthApi;
-  apiAuth: AuthApi;
+  browserAuthApi: AuthApi;
+  isolatedAuthApi: AuthApi;
+  bankAccountsApi: BankAccountsApi;
   usersApi: UsersApi;
   testUser: TestUser;
 };
@@ -27,16 +29,19 @@ export const test = base.extend<TestFixtures>({
   signUpPage: async ({ page }, use) => {
     await use(new SignUpPage(page));
   },
-  authApi: async ({ page }, use) => {
+  browserAuthApi: async ({ page }, use) => {
     // Shares the browser session's cookies.
     await use(new AuthApi(page.request));
   },
-  apiAuth: async ({ request }, use) => {
+  isolatedAuthApi: async ({ request }, use) => {
     // Separate cookie jar for API-only login and authorization checks.
     await use(new AuthApi(request));
   },
   usersApi: async ({ request }, use) => {
     await use(new UsersApi(request));
+  },
+  bankAccountsApi: async ({ request }, use) => {
+    await use(new BankAccountsApi(request));
   },
   testUser: async ({ usersApi }, use) => {
     const input = ApiUserBuilder.aValidUser().build();

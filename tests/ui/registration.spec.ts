@@ -5,7 +5,7 @@ test("a new user can register, sign in and access their API session", async ({
   page,
   signUpPage,
   signInPage,
-  authApi,
+  browserAuthApi,
 }) => {
   const user = RegistrationUserBuilder.aValidUser().build();
 
@@ -17,7 +17,7 @@ test("a new user can register, sign in and access their API session", async ({
 
   await expect(page.getByTestId("nav-top-new-transaction")).toBeVisible();
 
-  const response = await authApi.checkAuth();
+  const response = await browserAuthApi.checkAuth();
   expect(response.status).toBe(200);
   expect(response.body).toMatchObject({
     user: {
