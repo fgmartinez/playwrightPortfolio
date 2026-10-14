@@ -5,6 +5,7 @@ Independent Playwright/TypeScript test suite for the [Cypress Real World App](ht
 ## Current scope
 
 - Browser authentication flow, verified through the authenticated API session.
+- Invalid credentials: wrong password and unknown username.
 - API authorization check from a separate, unauthenticated HTTP context.
 - Chromium, serial execution, failure traces and screenshots.
 
@@ -53,13 +54,15 @@ The UI defaults to http://localhost:3000 and the backend to http://localhost:300
 | Path | Responsibility |
 | --- | --- |
 | `playwright.config.ts` | Runner configuration, browser, base URL and failure artifacts. |
+| `tests/support/models/` | Types shared by test data and UI actions. |
+| `tests/support/builders/` | Immutable variants of test data, starting with login credentials. |
 | `tests/support/pages/` | Page objects: UI actions and locators for one screen. |
 | `tests/support/api/` | HTTP clients: endpoints and transport; they do not decide test outcomes. |
 | `tests/support/fixtures.ts` | Constructs test-scoped objects and injects their dependencies. |
 | `tests/ui/` | User journeys and assertions across UI and API. |
 | `tests/api/` | Direct API behavior and authorization checks. |
 
-The page object receives Playwright's `Page`; the API client receives `APIRequestContext`. Tests assert outcomes. We add domain builders and more page objects when a scenario needs them, rather than building inheritance hierarchies before they have a purpose.
+The page object receives Playwright's `Page`; the API client receives `APIRequestContext`. Tests assert outcomes. The login builder starts from a seeded account and creates copies for invalid variants. A generated username is not treated as an existing account. We will add a registration payload builder when a scenario actually creates a user through the API.
 
 The UI test injects `page.request`, which shares the browser context's cookies with API calls. The API-only test uses Playwright's isolated `request` fixture, so it intentionally starts unauthenticated. This distinction is part of the test design.
 
