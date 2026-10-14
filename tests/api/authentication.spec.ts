@@ -1,9 +1,7 @@
-import { test, expect } from "@playwright/test";
-import { AuthApi } from "../support/api/AuthApi";
+import { test, expect } from "../support/fixtures";
 
-test("an unauthenticated client cannot read the current user", async ({ request }) => {
-  // The standalone request fixture has its own cookie jar.
-  const authApi = new AuthApi(request, process.env.API_BASE_URL ?? "http://localhost:3001");
+test("an unauthenticated client cannot read the current user", async ({ authApi }) => {
+  // The browser starts unauthenticated; its request context shares its cookies.
   const response = await authApi.checkAuth();
 
   expect(response.status()).toBe(401);
