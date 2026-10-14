@@ -1,4 +1,4 @@
-export type ApiResult<T> = Readonly<{
-  status: number;
+export type ApiResult<T, S extends number = number> = Readonly<{
+  status: S;
   body: T;
 }>;
