@@ -9,13 +9,10 @@ import { parseResponse } from "./parseResponse";
 export class UsersApi {
   constructor(private readonly request: APIRequestContext) {}
 
-  async create(user: ApiUser): Promise<ApiResult<UserResponse>> {
+  async create(user: ApiUser): Promise<ApiResult<UserResponse, 201>> {
     const response = await this.request.post(new URL("/users", appConfig.apiBaseURL).toString(), {
       data: user,
     });
-    if (response.status() !== 201) {
-      throw new Error(`POST /users: expected 201, received ${response.status()}`);
-    }
-    return parseResponse(response, decodeUserResponse);
+    return parseResponse(response, 201, decodeUserResponse);
   }
 }
