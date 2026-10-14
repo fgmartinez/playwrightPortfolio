@@ -1,10 +1,8 @@
-import { test, expect } from "@playwright/test";
-import { AuthApi } from "../support/api/AuthApi";
+import { test, expect } from "../support/fixtures";
 
-test("an unauthenticated client cannot read the current user", async ({ request }) => {
-  // The standalone request fixture has its own cookie jar.
-  const response = await new AuthApi(request).checkAuth();
+test("an unauthenticated client cannot read the current user", async ({ apiAuth }) => {
+  const response = await apiAuth.checkAuth();
 
-  expect(response.status()).toBe(401);
-  expect(await response.json()).toMatchObject({ error: "User is unauthorized" });
+  expect(response.status).toBe(401);
+  expect(response.body).toMatchObject({ error: "User is unauthorized" });
 });
