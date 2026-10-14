@@ -49,13 +49,14 @@ npm run typecheck
 npm test
 ```
 
-The UI defaults to http://localhost:3000 and the backend to http://localhost:3001. Override these with `UI_BASE_URL` and `API_BASE_URL` if needed. Commit the generated `package-lock.json` after installation; use `npm ci` on subsequent installs.
+The UI defaults to http://localhost:3000 and the backend to http://localhost:3001. Both origins are defined in `app.config.ts` and can be overridden with `UI_BASE_URL` and `API_BASE_URL`. Browser pages navigate with paths such as `/signin`; API clients own endpoint paths such as `/users`. Specs call the page objects and API clients without specifying a host. Commit the generated `package-lock.json` after installation; use `npm ci` on subsequent installs.
 
 ## Structure and responsibilities
 
 | Path | Responsibility |
 | --- | --- |
-| `playwright.config.ts` | Runner configuration, browser, base URL and failure artifacts. |
+| `app.config.ts` | Centralized UI and API origins with environment overrides. |
+| `playwright.config.ts` | Runner configuration, browser, UI base URL and failure artifacts. |
 | `tests/support/models/` | Types shared by test data and UI actions. |
 | `tests/support/builders/` | Immutable credentials and unique UI/API user payloads. |
 | `tests/support/pages/` | Page objects: UI actions and locators for one screen. |
