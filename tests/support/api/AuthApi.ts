@@ -7,10 +7,12 @@ import type { ApiError, UserResponse } from "../models/UserRecord";
 import { decodeApiError, decodeUserResponse } from "./decodeUser";
 import { parseResponse } from "./parseResponse";
 
+export type AuthCheckResult = ApiResult<UserResponse, 200> | ApiResult<ApiError, 401>;
+
 export class AuthApi {
   constructor(private readonly request: APIRequestContext) {}
 
-  async login(credentials: LoginCredentials, remember = false): Promise<ApiResult<UserResponse>> {
+  async login(credentials: LoginCredentials, remember = false): Promise<ApiResult<UserResponse, 200>> {
     const payload: LoginRequest = {
       type: "LOGIN",
       ...credentials,
@@ -19,16 +21,13 @@ export class AuthApi {
     const response = await this.request.post(new URL("/login", appConfig.apiBaseURL).toString(), {
       data: payload,
     });
-    if (response.status() !== 200) {
-      throw new Error(`POST /login: expected 200, received ${response.status()}`);
-    }
-    return parseResponse(response, decodeUserResponse);
+    return parseResponse(response, 200, decodeUserResponse);
   }
 
-  async checkAuth(): Promise<ApiResult<UserResponse | ApiError>> {
+  async checkAuth(): Promise<AuthCheckResult> {
     const response = await this.request.get(new URL("/checkAuth", appConfig.apiBaseURL).toString());
-    if (response.status() === 200) return parseResponse(response, decodeUserResponse);
-    if (response.status() === 401) return parseResponse(response, decodeApiError);
+    if (response.status() === 200) return parseResponse(response, 200, decodeUserResponse);
+    if (response.status() === 401) return parseResponse(response, 401, decodeApiError);
     throw new Error(`GET /checkAuth: unexpected status ${response.status()}`);
   }
 }
