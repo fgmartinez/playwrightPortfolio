@@ -18,9 +18,8 @@ test("a new user can register, sign in and access their API session", async ({
   await expect(page.getByTestId("nav-top-new-transaction")).toBeVisible();
 
   const response = await authApi.checkAuth();
-  expect(response.status()).toBe(200);
-  const body: unknown = await response.json();
-  expect(body).toMatchObject({
+  expect(response.status).toBe(200);
+  expect(response.body).toMatchObject({
     user: {
       username: user.username,
       firstName: user.firstName,
