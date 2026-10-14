@@ -10,7 +10,7 @@ The spec owns intent and assertions. It must be understandable without opening p
 
 ## Scenario data
 
-Create a unique sender and receiver for each test via `POST /users`. Set the sender balance to 10000 cents and the receiver balance to 0. Use a unique transaction note. Authenticate an API context as the sender and create one bank account through `POST /bankAccounts` before UI login, because the app blocks new users with no account behind onboarding. The bank account request needs `bankName`, `routingNumber`, and `accountNumber`; keep fake but valid values.
+Create a unique sender and receiver for each test via `POST /users`. Set the sender balance to 10000 cents and the receiver balance to 0. Use a unique transaction note. Authenticate an API context as the sender and create one bank account through the `CreateBankAccount` GraphQL mutation at `POST /graphql` before UI login, because the app blocks new users with no account behind onboarding. The variables need `bankName`, `routingNumber`, and `accountNumber`; keep fake but valid values. The resolver obtains `userId` from the authenticated session, so do not supply it as a variable. GraphQL may return HTTP 200 with `errors`; check errors and `data.createBankAccount` before accepting the response.
 
 For assertions that require each user's private data, use a separate authenticated API context per persona. Never log in sender then receiver using the same context before completing sender assertions. Dispose contexts after the test. The browser session is independent: log in through UI because that interaction is part of the journey. Request context creation and cleanup belong to a fixture, not to shared globals.
 
@@ -28,7 +28,7 @@ The app has a demo backend: its creation code does not enforce every banking inv
 
 ## Implementation order
 
-1. Define `BankAccountInput`, `BankAccountRecord`, and `BankAccountBuilder`; implement `BankAccountsApi.create(input)` with the existing response decoder pattern.
+1. Define `BankAccountInput`, `BankAccountRecord`, and `BankAccountBuilder`; implement `BankAccountsApi.create(input)` against the GraphQL mutation. Decode `data.createBankAccount` and reject GraphQL errors even when HTTP is 200.
 2. Add test-scoped authenticated API context handling with cleanup. Add `UsersApi.getById(id)` for balance reads.
 3. Define the minimal transaction response projection and `TransactionsApi` read operation. Add `PaymentPage` only with actions used by this journey.
 4. Compose a lazy `paymentScenario` fixture. Write the first test in the spec; keep assertions there.
