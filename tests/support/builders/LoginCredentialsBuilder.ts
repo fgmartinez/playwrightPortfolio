@@ -3,10 +3,10 @@ import type { LoginCredentials } from "../models/LoginCredentials";
 export class LoginCredentialsBuilder {
   private constructor(private readonly credentials: LoginCredentials) {}
 
-  static forSeededUser(): LoginCredentialsBuilder {
+  static fromUser(user: LoginCredentials): LoginCredentialsBuilder {
     return new LoginCredentialsBuilder({
-      username: "Heath93",
-      password: "s3cret",
+      username: user.username,
+      password: user.password,
     });
   }
 
