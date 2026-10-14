@@ -8,7 +8,7 @@ test("UI login establishes an authenticated API session", async ({
   authApi,
   testUser,
 }) => {
-  const credentials = LoginCredentialsBuilder.fromUser(testUser).build();
+  const credentials = LoginCredentialsBuilder.fromUser(testUser.input).build();
 
   await signInPage.open();
   await signInPage.signIn(credentials);
@@ -16,16 +16,15 @@ test("UI login establishes an authenticated API session", async ({
   await expect(page.getByTestId("nav-top-new-transaction")).toBeVisible();
 
   const response = await authApi.checkAuth();
-  expect(response.status()).toBe(200);
-  const body: unknown = await response.json();
-  expect(body).toMatchObject({ user: { username: testUser.username } });
+  expect(response.status).toBe(200);
+  expect(response.body).toMatchObject({ user: { id: testUser.record.id } });
 });
 
 test("UI login rejects the wrong password for an existing user", async ({
   signInPage,
   testUser,
 }) => {
-  const credentials = LoginCredentialsBuilder.fromUser(testUser)
+  const credentials = LoginCredentialsBuilder.fromUser(testUser.input)
     .withPassword("incorrect-password")
     .build();
 
@@ -36,7 +35,6 @@ test("UI login rejects the wrong password for an existing user", async ({
 });
 
 test("UI login rejects an unknown username", async ({ signInPage }) => {
-  // The generated user is intentionally not created through the API.
   const unknownUser = ApiUserBuilder.aValidUser().build();
   const credentials = LoginCredentialsBuilder.fromUser(unknownUser).build();
 
