@@ -1,9 +1,4 @@
 import type { RegistrationUser } from "./RegistrationUser";
 
-export type ApiUser = RegistrationUser & Readonly<{
-  email: string;
-  phoneNumber: string;
-  avatar: string;
-  balance: number;
-  defaultPrivacyLevel: "public" | "private" | "contacts";
-}>;
+// POST /users accepts these fields; balance is optional and defaults to 0.
+export type ApiUser = RegistrationUser & Readonly<{ balance?: number }>;
