@@ -6,8 +6,6 @@ import type { ApiUser } from "./models/ApiUser";
 import { SignInPage } from "./pages/SignInPage";
 import { SignUpPage } from "./pages/SignUpPage";
 
-const apiBaseURL = process.env.API_BASE_URL ?? "http://localhost:3001";
-
 type TestFixtures = {
   signInPage: SignInPage;
   signUpPage: SignUpPage;
@@ -25,11 +23,11 @@ export const test = base.extend<TestFixtures>({
   },
   authApi: async ({ page }, use) => {
     // page.request shares cookies with this test's browser context.
-    await use(new AuthApi(page.request, apiBaseURL));
+    await use(new AuthApi(page.request));
   },
   usersApi: async ({ request }, use) => {
     // Isolated API context: creating a user does not authenticate the browser.
-    await use(new UsersApi(request, apiBaseURL));
+    await use(new UsersApi(request));
   },
   testUser: async ({ usersApi }, use) => {
     const user = ApiUserBuilder.aValidUser().build();
