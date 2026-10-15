@@ -1,46 +1,55 @@
 import { test, expect } from "../support/fixtures";
-import { ApiUserBuilder } from "../support/builders/users/ApiUserBuilder";
-import { BankAccountBuilder } from "../support/builders/bankAccounts/BankAccountBuilder";
 import { BankAccountsApi } from "../support/api/bank/BankAccountsApi";
+import { UsersApi } from "../support/api/users/UsersApi";
+import { BankAccountBuilder } from "../support/builders/bankAccounts/BankAccountBuilder";
+import { ApiUserBuilder } from "../support/builders/users/ApiUserBuilder";
 
-test("two users create bank accounts in independent sessions", async ({
+test("sender and receiver prepare bank accounts with independent sessions", async ({
   page,
+  signInPage,
   browserAuthApi,
   isolatedAuthApi,
   usersApi,
   bankAccountsApi,
 }) => {
   const receiverInput = ApiUserBuilder.aValidUser().build();
-  const senderInput = ApiUserBuilder.aValidUser()
-    .withBalance(10_000)
-    .build();
+  const senderInput = ApiUserBuilder.aValidUser().withBalance(10_000).build();
 
-  // Both users are created before the isolated API context logs in.
+  // User creation is public; the isolated request context is still anonymous here.
   const receiver = (await usersApi.create(receiverInput)).body.user;
   const sender = (await usersApi.create(senderInput)).body.user;
+  expect(receiver.balance).toBe(0);
+  expect(sender.balance).toBe(10_000);
 
-  // Each login stores its cookie in a different context.
-  const receiverLogin = await isolatedAuthApi.login(receiverInput);
-  const senderLogin = await browserAuthApi.login(senderInput);
-
-  expect(receiverLogin.body.user.id).toBe(receiver.id);
-  expect(senderLogin.body.user.id).toBe(sender.id);
-
+  // The receiver only needs API access. This login authenticates the request fixture.
+  await isolatedAuthApi.login(receiverInput);
   const receiverAccount = await bankAccountsApi.create(
     BankAccountBuilder.aValidAccount().build(),
   );
+  expect(receiverAccount.body.userId).toBe(receiver.id);
 
-  const senderBankAccountsApi = new BankAccountsApi(page.request);
-  const senderAccount = await senderBankAccountsApi.create(
+  // This app stores UI auth state in XState/localStorage as well as a session cookie.
+  // Signing in through the UI initializes both; page.request then shares its cookie.
+  await signInPage.open();
+  await signInPage.signIn(senderInput);
+  const senderSession = await browserAuthApi.checkAuth();
+  expect(senderSession).toMatchObject({
+    status: 200,
+    body: { user: { id: sender.id } },
+  });
+
+  const senderAccount = await new BankAccountsApi(page.request).create(
     BankAccountBuilder.aValidAccount().build(),
   );
-
-  expect(receiverAccount.body.userId).toBe(receiver.id);
   expect(senderAccount.body.userId).toBe(sender.id);
 
-  await page.goto("/");
-  await expect(page.getByTestId("sidenav-username"))
-    .toContainText(sender.username);
-  await expect(page.getByTestId("user-onboarding-dialog"))
-    .toBeHidden();
+  // The onboarding list was loaded before the API created the sender's account.
+  await page.reload();
+  await expect(page.getByTestId("sidenav-username")).toContainText(sender.username);
+  await expect(page.getByTestId("user-onboarding-dialog")).toBeHidden();
+
+  const receiverProfile = await usersApi.getById(receiver.id);
+  const senderProfile = await new UsersApi(page.request).getById(sender.id);
+  expect(receiverProfile.body.user.balance).toBe(0);
+  expect(senderProfile.body.user.balance).toBe(10_000);
 });
