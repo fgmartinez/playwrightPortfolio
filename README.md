@@ -8,6 +8,7 @@ Independent Playwright/TypeScript test suite for the [Cypress Real World App](ht
 - UI registration and login are verified through the authenticated API session.
 - Negative UI login cases cover a wrong password and an unknown username.
 - API tests cover unauthenticated access, login, and authenticated bank account creation.
+- Payment setup checks independent receiver API and sender browser sessions, with bank accounts owned by the correct users.
 - Chromium, serial execution, failure traces and screenshots.
 
 The application is a local Express/React demo with a shared JSON database. It reseeds on `yarn dev`, so manually registered accounts are temporary. There is no per-user DELETE endpoint. We start with one worker; parallel runs need isolated application and database instances.
@@ -67,7 +68,9 @@ The UI defaults to http://localhost:3000 and the backend to http://localhost:300
 
 Page objects receive Playwright's `Page`; API clients receive `APIRequestContext`. Tests own business assertions. The lazy `testUser` fixture creates a unique account through `POST /users` and exposes `{ input, record }`: `input.password` is the test credential, while `record.id` is the server-generated identity. The registration test creates its user through the UI because registration is the behavior under test. No login test relies on a seeded account. See [ADR 0001](docs/decisions/0001-test-data-isolation.md) for the isolation decision.
 
-`browserAuthApi` uses `page.request` and shares browser cookies. `isolatedAuthApi`, `usersApi`, and `bankAccountsApi` use Playwright's separate `request` fixture; those API clients share its cookie jar within a test. Each client owns its endpoint path and returns a status plus a decoded body. Response decoders validate only fields used by the suite, with common JSON field checks in `api/shared/decodeJson.ts`. They discard the server's password hash. GraphQL errors are checked even when HTTP returns 200.
+`browserAuthApi` uses `page.request` and shares browser cookies. `isolatedAuthApi`, `usersApi`, and `bankAccountsApi` use Playwright's separate `request` fixture; those API clients share its cookie jar within a test. API clients never create or switch sessions themselves.
+
+The app also keeps UI authorization state in an XState machine persisted to localStorage. A cookie obtained with `page.request` authenticates HTTP calls but does not initialize that UI state. For a scenario that navigates the app, log in with `SignInPage` and then use `page.request` for API reads or setup in the same browser session. A second user who only needs API operations logs in with `isolatedAuthApi` and uses clients bound to `request`. In the payment setup test, the receiver uses `request`, while the sender logs in through the UI and uses `page.request`; creating the sender's bank account after UI login requires a reload so the onboarding list refetches it. A new user may be given a balance through `ApiUserBuilder.withBalance()` for API setup; the UI sign-up form creates users with a zero balance. Each client owns its endpoint path and returns a status plus a decoded body. Response decoders validate only fields used by the suite, with common JSON field checks in `api/shared/decodeJson.ts`. They discard the server's password hash. GraphQL errors are checked even when HTTP returns 200.
 
 ```ts
 const { input, record } = testUser; // fixture already called POST /users
@@ -84,10 +87,10 @@ The sample includes no hardcoded host. `app.config.ts` provides UI/API origins; 
 
 | Layer | Behavior |
 | --- | --- |
-| UI | Registration, successful login, wrong password, unknown username. |
+| UI | Registration, successful login, wrong password, unknown username, and preparation of two separately authenticated bank account owners. |
 | API | Anonymous session rejection, login session, authenticated bank account creation and ownership. |
 
-The suite currently has seven independent tests. Bank account creation uses the app's GraphQL mutation and checks that the returned account belongs to the newly created user.
+The suite currently has eight independent tests. Bank account creation uses the app's GraphQL mutation and checks that the returned account belongs to the newly created user.
 
 ## Quality gate and documentation
 
@@ -97,4 +100,4 @@ Public types, builders, API clients, page objects and non-obvious behavior have 
 
 ## Next slice
 
-Build a transfer flow next: prepare users through the API, submit a payment in the UI, and verify the resulting transaction and balances through the API. Before adding parallel workers, provide isolated application/database instances or another proven state isolation strategy.
+Extend `tests/ui/payment.spec.ts` with a payment from the sender to the receiver. Verify the transaction and both user balances through the API (balances and transaction amounts are stored in cents). The existing test establishes account ownership and independent sessions; it does not yet submit a payment. Before adding parallel workers, provide isolated application/database instances or another proven state isolation strategy.
