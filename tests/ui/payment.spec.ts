@@ -32,6 +32,8 @@ test("sender and receiver prepare bank accounts with independent sessions", asyn
   // Signing in through the UI initializes both; page.request then shares its cookie.
   await signInPage.open();
   await signInPage.signIn(senderInput);
+  // Clicking Sign In can finish before the async login response updates the cookie.
+  await expect(page.getByTestId("sidenav-username")).toContainText(sender.username);
   const senderSession = await browserAuthApi.checkAuth();
   expect(senderSession).toMatchObject({
     status: 200,
