@@ -17,4 +17,9 @@ export class UsersApi {
     });
     return parseResponse(response, 201, decodeUserResponse);
   }
+
+  async getById(userId: string): Promise<ApiResult<UserResponse, 200>> {
+    const response = await this.request.get(new URL(`/users/${userId}`, appConfig.apiBaseURL).toString());
+    return parseResponse(response, 200, decodeUserResponse);
+  }
 }
