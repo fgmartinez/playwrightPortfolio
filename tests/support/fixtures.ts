@@ -30,11 +30,11 @@ export const test = base.extend<TestFixtures>({
     await use(new SignUpPage(page));
   },
   browserAuthApi: async ({ page }, use) => {
-    // Shares the browser session's cookies.
+    // Shares browser cookies; an API login alone does not initialize the app's UI auth state.
     await use(new AuthApi(page.request));
   },
   isolatedAuthApi: async ({ request }, use) => {
-    // Separate cookie jar for API-only login and authorization checks.
+    // Independent cookie jar for a user who only needs API access.
     await use(new AuthApi(request));
   },
   usersApi: async ({ request }, use) => {
