@@ -1,0 +1,90 @@
+name: Quality
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+          cache: npm
+
+      - run: npm ci
+      - run: npm run check
+
+  integration-tests:
+    name: Integration / ${{ matrix.project }}
+    needs: static-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        project: [api, chromium, firefox, webkit]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright browser
+        if: matrix.project != 'api'
+        run: npx playwright install --with-deps "${{ matrix.project }}"
+
+      - name: Install pinned application
+        env:
+          CYPRESS_INSTALL_BINARY: "0"
+        run: |
+          git clone https://github.com/cypress-io/cypress-realworld-app.git "$RUNNER_TEMP/cypress-realworld-app"
+          cd "$RUNNER_TEMP/cypress-realworld-app"
+          git checkout 0729f68ac220f7cda4ad09c5693dba11d7c532c6
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
+          yarn install --frozen-lockfile
+
+      - name: Run ${{ matrix.project }} tests
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP/cypress-realworld-app"
+          yarn dev > "$RUNNER_TEMP/app.log" 2>&1 &
+          app_pid=$!
+
+          trap 'result=$?; if [ "$result" -ne 0 ]; then tail -100 "$RUNNER_TEMP/app.log"; fi; kill "$app_pid" 2>/dev/null || true' EXIT
+
+          for attempt in {1..90}; do
+            if curl -fsS http://localhost:3000/signin > /dev/null &&
+               curl -fsS http://localhost:3001/ > /dev/null; then
+              break
+            fi
+            sleep 2
+          done
+
+          curl -fsS http://localhost:3000/signin > /dev/null
+          curl -fsS http://localhost:3001/ > /dev/null
+
+          cd "$GITHUB_WORKSPACE"
+          npx playwright test --project="${{ matrix.project }}"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-${{ matrix.project }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

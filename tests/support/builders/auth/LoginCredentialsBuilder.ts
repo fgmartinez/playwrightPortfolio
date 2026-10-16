@@ -1,5 +1,6 @@
-import type { LoginCredentials } from "../models/LoginCredentials";
+import type { LoginCredentials } from "../../models/auth/LoginCredentials";
 
+/** Derive login credentials from an existing user and vary one field at a time. */
 export class LoginCredentialsBuilder {
   private constructor(private readonly credentials: LoginCredentials) {}
 

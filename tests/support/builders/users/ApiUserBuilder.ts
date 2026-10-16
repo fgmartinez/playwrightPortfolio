@@ -1,6 +1,7 @@
-import type { ApiUser } from "../models/ApiUser";
+import type { ApiUser } from "../../models/users/ApiUser";
 import { RegistrationUserBuilder } from "./RegistrationUserBuilder";
 
+/** Immutable variants of the POST /users payload. */
 export class ApiUserBuilder {
   private constructor(private readonly user: ApiUser) {}
 

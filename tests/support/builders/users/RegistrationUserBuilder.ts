@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type { RegistrationUser } from "../models/RegistrationUser";
+import type { RegistrationUser } from "../../models/users/RegistrationUser";
 
+/** Unique credentials for a new user; safe to run tests in any order. */
 export class RegistrationUserBuilder {
   private constructor(private readonly user: RegistrationUser) {}
 

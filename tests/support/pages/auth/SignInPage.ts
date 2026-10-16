@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import type { LoginCredentials } from "../models/LoginCredentials";
+import type { LoginCredentials } from "../../models/auth/LoginCredentials";
 
 export class SignInPage {
   readonly errorMessage: Locator;

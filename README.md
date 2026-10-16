@@ -1,21 +1,24 @@
 # Playwright Portfolio
 
-Independent Playwright/TypeScript test suite for the [Cypress Real World App](https://github.com/cypress-io/cypress-realworld-app). The application belongs to Cypress; this repository contains only the test framework and tests.
+Playwright and TypeScript tests for the [Cypress Real World App](https://github.com/cypress-io/cypress-realworld-app). This repository contains the tests and their runner; the application is maintained by Cypress and checked out at commit `0729f68ac220f7cda4ad09c5693dba11d7c532c6`.
 
-## Current scope
+## Run with Docker
 
-- Typed API setup: a unique user is created through the API for each test that needs one.
-- The UI session is verified through the authenticated API endpoint.
-- Invalid credentials: wrong password and unknown username.
-- New account registration through UI, followed by login and API session verification.
-- API authorization check from a separate, unauthenticated HTTP context.
-- Chromium, serial execution, failure traces and screenshots.
+From the repository root:
 
-The application is a local Express/React demo with a shared JSON database. It reseeds on `yarn dev`, so manually registered accounts are temporary. There is no per-user DELETE endpoint. We start with one worker; parallel runs need isolated application and database instances.
+```bash
+docker compose up --build --abort-on-container-exit --exit-code-from tests
+```
+
+The image installs the pinned app and Playwright browsers. The container starts the app, waits for the UI and API, runs `npm run check`, then runs the full suite. Playwright reports and test results are written to `playwright-report/` and `test-results/`. To run one project or a specific spec, pass Playwright arguments after the service name:
+
+```bash
+docker compose run --build --rm tests --project=firefox
+```
 
 ## Run locally
 
-Use Node.js 22.20.0, npm and Yarn Classic 1.22.22. Keep both repositories in the same parent directory.
+Use Node.js 22.20.0, npm, and Yarn Classic 1.22.22. Put the repositories next to each other:
 
 ```text
 portfolio-workspace/
@@ -23,63 +26,46 @@ portfolio-workspace/
   playwrightPortfolio/
 ```
 
-Clone and check out the tested application revision:
+Clone the app and check out the revision above, then install its dependencies and start it in one terminal:
 
 ```bash
 git clone https://github.com/cypress-io/cypress-realworld-app.git
 git -C cypress-realworld-app checkout 0729f68ac220f7cda4ad09c5693dba11d7c532c6
-git clone https://github.com/fgmartinez/playwrightPortfolio.git
-```
-
-Install app dependencies with Yarn Classic and start it in one terminal:
-
-```bash
 cd cypress-realworld-app
-yarn install --frozen-lockfile
+CYPRESS_INSTALL_BINARY=0 yarn install --frozen-lockfile
 yarn dev
 ```
 
-In a second terminal, install and run the test suite:
+In another terminal, from `playwrightPortfolio/`:
 
 ```bash
-cd playwrightPortfolio
-npm install
-npx playwright install chromium
-npm run typecheck
+npm ci
+npx playwright install --with-deps chromium firefox webkit
 npm test
 ```
 
-The UI defaults to http://localhost:3000 and the backend to http://localhost:3001. Both origins are defined in `app.config.ts` and can be overridden with `UI_BASE_URL` and `API_BASE_URL`. Browser pages navigate with paths such as `/signin`; API clients own endpoint paths such as `/users`. Specs call the page objects and API clients without specifying a host. Commit the generated `package-lock.json` after installation; use `npm ci` on subsequent installs.
+The UI defaults to `http://localhost:3000` and the API to `http://localhost:3001`. Override them with `UI_BASE_URL` and `API_BASE_URL` if needed. `npm test` runs the type and lint checks before Playwright; `npx playwright test --project=api` runs one project directly.
 
-## Structure and responsibilities
+## Coverage
 
-| Path | Responsibility |
+| Project | Scenarios |
 | --- | --- |
-| `app.config.ts` | Centralized UI and API origins with environment overrides. |
-| `playwright.config.ts` | Runner configuration, browser, UI base URL and failure artifacts. |
-| `tests/support/models/` | Typed requests, user projection and generic `ApiResult<T>`. |
-| `tests/support/builders/` | Immutable credentials and unique UI/API user payloads. |
-| `tests/support/pages/` | Page objects: UI actions and locators for one screen. |
-| `tests/support/api/` | HTTP clients: endpoints and transport; they do not decide test outcomes. |
-| `tests/support/fixtures.ts` | Constructs test-scoped objects and injects their dependencies. |
-| `tests/ui/` | User journeys and assertions across UI and API. |
-| `tests/api/` | Direct API behavior and authorization checks. |
+| API | Anonymous access, login, bank account ownership, and private profile isolation. |
+| Chromium, Firefox, WebKit | Registration, successful login, two rejected logins, and a payment with transaction and balance checks. |
 
-The page object receives Playwright's `Page`; the API client receives `APIRequestContext`. Tests assert business outcomes. `ApiUserBuilder` produces a unique minimal POST body (`firstName`, `lastName`, `username`, `password`) and optionally a balance. The lazy `testUser` fixture creates an account through `POST /users` for each test that requests one, exposing `{ input, record }`: `input.password` is the test credential, while `record.id` is the server-generated identity. API responses are decoded from `unknown` into typed projections; the server's password hash is never included in `UserRecord`. The UI registration test creates its own user through `SignUpPage` because registration is the behavior under test. No login test relies on a fixed seeded account. See [ADR 0001](docs/decisions/0001-test-data-isolation.md) for the isolation decision.
+There are four API specs and five UI specs. The UI specs run once in each browser, for 19 test invocations in the full matrix. Each test creates its own user when needed; the registration test creates its user through the UI. The app uses a shared JSON database and reseeds on startup, so each Playwright project runs with one worker. See [ADR 0001](docs/decisions/0001-test-data-isolation.md).
 
-`authApi` uses `page.request`, which shares the browser context's cookies; `apiAuth` and `usersApi` use the isolated Playwright `request` fixture. Each API client owns its relative endpoint path and returns `ApiResult<T>` with a status and validated body. `UsersApi.create(input): Promise<ApiResult<UserResponse, 201>>` requires 201. `AuthApi.login(credentials, remember?): Promise<ApiResult<UserResponse, 200>>` requires 200 and logs in only its own request context. `AuthApi.checkAuth(): Promise<ApiResult<UserResponse, 200> | ApiResult<ApiError, 401>>` accepts 200 and 401. The API login and checkAuth contracts match the pinned app; no frontend session is created by calling `apiAuth.login`.
+The [Quality workflow](.github/workflows/quality.yml) runs type and lint checks, then four parallel jobs: API, Chromium, Firefox, and WebKit. Each job starts its own app instance and database and uploads Playwright artifacts. The Docker image is a separate local way to run the complete suite; the workflow installs the app and browsers directly on GitHub runners.
 
-```ts
-const { input, record } = testUser; // fixture already called POST /users
-await signInPage.open();
-await signInPage.signIn(LoginCredentialsBuilder.fromUser(input).build());
-const session = await authApi.checkAuth(); // shares browser cookies
-expect(session.status).toBe(200);
-expect(session.body).toMatchObject({ user: { id: record.id } });
-```
+## Test design
 
-The sample includes no hardcoded host. `app.config.ts` provides UI/API origins and page objects and API clients provide paths.
+| Path | Purpose |
+| --- | --- |
+| `app.config.ts`, `playwright.config.ts` | Origins and Playwright projects. |
+| `tests/support/fixtures.ts` | Test-scoped users, page objects, and API clients. |
+| `tests/support/builders/`, `tests/support/models/` | Test data and API types. |
+| `tests/support/pages/` | UI actions and locators. |
+| `tests/support/api/` | Typed HTTP calls and response decoding. |
+| `tests/ui/`, `tests/api/` | Business assertions. |
 
-## Next slice
-
-Once the current setup passes typecheck and runs against the pinned app, build a transfer flow: create/prepare users through API, submit a payment in UI, and verify the resulting transaction and balances through API. Before adding parallel workers, provide isolated data per worker or separate app/database instances.
+Browser-bound API clients use `page.request` and share browser cookies. Isolated API clients use Playwright's `request` fixture and its separate cookie jar. The app also persists UI authorization in localStorage, so an API login by itself does not establish a navigable UI session. The payment test signs in the sender through the UI and uses a separate API session for the receiver. It waits for the payment request to finish before asserting balances because the app advances its wizard before the POST resolves.

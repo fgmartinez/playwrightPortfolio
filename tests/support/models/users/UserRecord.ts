@@ -1,14 +1,13 @@
-// Only fields the suite consumes; the server also returns a password hash.
+/** Selected server fields; the response's password hash is intentionally discarded. */
 export type UserRecord = Readonly<{
   id: string;
-  uuid: string;
   firstName: string;
   lastName: string;
   username: string;
   balance: number;
-  createdAt: string;
-  modifiedAt: string;
 }>;
 
+/** Successful user payload shared by creation, login and session endpoints. */
 export type UserResponse = Readonly<{ user: UserRecord }>;
+/** Error payload returned by the session check when unauthenticated. */
 export type ApiError = Readonly<{ error: string }>;

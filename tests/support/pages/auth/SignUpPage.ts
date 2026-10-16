@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import type { RegistrationUser } from "../models/RegistrationUser";
+import type { RegistrationUser } from "../../models/users/RegistrationUser";
 
 export class SignUpPage {
   constructor(private readonly page: Page) {}

@@ -1,11 +1,11 @@
 import { test, expect } from "../support/fixtures";
-import { ApiUserBuilder } from "../support/builders/ApiUserBuilder";
-import { LoginCredentialsBuilder } from "../support/builders/LoginCredentialsBuilder";
+import { ApiUserBuilder } from "../support/builders/users/ApiUserBuilder";
+import { LoginCredentialsBuilder } from "../support/builders/auth/LoginCredentialsBuilder";
 
 test("UI login establishes an authenticated API session", async ({
   page,
   signInPage,
-  authApi,
+  browserAuthApi,
   testUser,
 }) => {
   const credentials = LoginCredentialsBuilder.fromUser(testUser.input).build();
@@ -15,7 +15,7 @@ test("UI login establishes an authenticated API session", async ({
 
   await expect(page.getByTestId("nav-top-new-transaction")).toBeVisible();
 
-  const response = await authApi.checkAuth();
+  const response = await browserAuthApi.checkAuth();
   expect(response.status).toBe(200);
   expect(response.body).toMatchObject({ user: { id: testUser.record.id } });
 });
