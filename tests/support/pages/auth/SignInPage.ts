@@ -17,6 +17,5 @@ export class SignInPage {
     await this.page.getByRole("textbox", { name: "Username" }).fill(username);
     await this.page.getByLabel("Password").fill(password);
     await this.page.getByRole("button", { name: "Sign In" }).click();
-    await this.page.waitForSelector(("sidenav-username"))
   }
 }

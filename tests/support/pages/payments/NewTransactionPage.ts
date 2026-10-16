@@ -1,16 +1,18 @@
-import { Locator, Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
-// NewTransactionPage.ts
+/** Interactions with the new transaction wizard, shared by payments and requests. */
 export class NewTransactionPage {
-  constructor(private readonly page: Page) {}
+  readonly completionButton: Locator;
 
-  async waitUntilReady(): Promise<void> {
-    await this.page.getByTestId("user-list-search-input").waitFor({
-      state: "visible",
-    });
+  constructor(private readonly page: Page) {
+    this.completionButton = page.getByTestId("new-transaction-return-to-transactions");
   }
 
- async selectReceiver(username: string, userId: string): Promise<void> {
+  async waitUntilReady(): Promise<void> {
+    await this.page.getByTestId("user-list-search-input").waitFor({ state: "visible" });
+  }
+
+  async selectReceiver(username: string, userId: string): Promise<void> {
     await this.page.getByTestId("user-list-search-input").fill(username);
     await this.page.getByTestId(`user-list-item-${userId}`).click();
   }
@@ -28,7 +30,7 @@ export class NewTransactionPage {
     await this.page.getByTestId("transaction-create-submit-request").click();
   }
 
-  get completionButton(): Locator {
-    return this.page.getByTestId("new-transaction-return-to-transactions");
+  async returnToTransactions(): Promise<void> {
+    await this.completionButton.click();
   }
 }
