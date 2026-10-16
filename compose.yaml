@@ -1,0 +1,12 @@
+services:
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    shm_size: "1gb"
+    environment:
+      CI: "true"
+    volumes:
+      - ./playwright-report:/opt/playwright-portfolio/playwright-report
+      - ./test-results:/opt/playwright-portfolio/test-results
