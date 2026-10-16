@@ -7,9 +7,13 @@ import type { ApiUser } from "./models/users/ApiUser";
 import type { UserRecord } from "./models/users/UserRecord";
 import { SignInPage } from "./pages/auth/SignInPage";
 import { SignUpPage } from "./pages/auth/SignUpPage";
+import { SideNav } from "./pages/components/SideNav";
 
 /** A test-owned user: original credentials plus server-generated identity. */
 export type TestUser = Readonly<{ input: ApiUser; record: UserRecord }>;
+export type UserFactory = {
+  create: (balance?: number) => Promise<TestUser>;
+}
 
 type TestFixtures = {
   signInPage: SignInPage;
@@ -19,6 +23,8 @@ type TestFixtures = {
   bankAccountsApi: BankAccountsApi;
   usersApi: UsersApi;
   testUser: TestUser;
+  userFactory: UserFactory;
+  sideNav: SideNav;
 };
 
 /** Test-scoped dependencies. Fixtures run only when a test requests them. */
@@ -28,6 +34,9 @@ export const test = base.extend<TestFixtures>({
   },
   signUpPage: async ({ page }, use) => {
     await use(new SignUpPage(page));
+  },
+  sideNav: async ({ page }, use) => {
+    await use(new SideNav(page));
   },
   browserAuthApi: async ({ page }, use) => {
     // Shares browser cookies; an API login alone does not initialize the app's UI auth state.
@@ -47,6 +56,17 @@ export const test = base.extend<TestFixtures>({
     const input = ApiUserBuilder.aValidUser().build();
     const created = await usersApi.create(input);
     await use({ input, record: created.body.user });
+  },
+
+  userFactory: async ({ usersApi }, use) => {
+    const factory: UserFactory = {
+      create: async (balance = 0) => {
+        const input = ApiUserBuilder.aValidUser().withBalance(balance).build();
+        const created = await usersApi.create(input);
+        return { input, record: created.body.user };
+      }
+    }
+    await use(factory);
   },
 });
 
