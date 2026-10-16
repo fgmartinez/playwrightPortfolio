@@ -14,5 +14,22 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "api", testDir: "./tests/api" },
+    {
+      name: "chromium",
+      testDir: "./tests/ui",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "firefox",
+      testDir: "./tests/ui",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      testDir: "./tests/ui",
+      use: { ...devices["Desktop Safari"] },
+    },
+  ],
 });

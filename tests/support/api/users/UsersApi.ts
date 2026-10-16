@@ -19,7 +19,7 @@ export class UsersApi {
   }
 
   /** Read the profile as its owner, using an authenticated request context. */
-  async getById(userId: string): Promise<ApiResult<UserResponse, 200>> {
+  async getById(userId: string): Promise<ApiResult<UserResponse, 200 >> {
     const response = await this.request.get(new URL(`/users/${userId}`, appConfig.apiBaseURL).toString());
     return parseResponse(response, 200, decodeUserResponse);
   }
