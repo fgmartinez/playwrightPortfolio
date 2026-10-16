@@ -1,6 +1,5 @@
 import type { Page } from "@playwright/test";
 
-/** Navigation actions shared by transaction screens; no page-object construction. */
 export class TopNav {
   constructor(private readonly page: Page) {}
 

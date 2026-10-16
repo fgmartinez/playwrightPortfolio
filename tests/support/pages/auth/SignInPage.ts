@@ -1,7 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import type { LoginCredentials } from "../../models/auth/LoginCredentials";
 
-/** Sign-in screen interactions; assertions remain in the spec. */
 export class SignInPage {
   readonly errorMessage: Locator;
 
